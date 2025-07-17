@@ -1,0 +1,18 @@
+# Configs Locais
+.env
+.env.local
+*.local
+
+# Pasta de dependências
+node_modules/
+
+# Arquivos de log
+*.log
+
+# IDEs e editores
+.vscode/
+.idea/
+
+# Outros arquivos temporários do sistema
+.DS_Store
+Thumbs.db
