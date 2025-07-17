@@ -68,4 +68,28 @@ export const logger = {
     console.error(chalk.red(formatMessage('ERROR', msg)));
     await sendToDiscord('ERROR', '❌', 0xe74c3c, msg);
   },
+  logStartupInfo: async () => {
+    if (!discordClient || !logChannelId) return;
+    try {
+      const channel = await discordClient.channels.fetch(logChannelId);
+      if (channel && channel.isTextBased()) {
+        const now = new Date();
+        const formattedDate = now.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  
+        const guilds = discordClient.guilds.cache.map(g => `${g.name} (ID: ${g.id})`).join('\n') || 'Nenhum servidor';
+  
+        const embed = new EmbedBuilder()
+          .setColor(0x00ff99)
+          .setTitle('🟢 Bot Iniciado')
+          .setDescription('O bot foi iniciado com sucesso.')
+          .addFields(
+            { name: 'Data e Hora', value: formattedDate, inline: false },
+            { name: 'Servidores Conectados', value: guilds, inline: false }
+          )
+          .setFooter({ text: timestamp() });
+  
+        await channel.send({ embeds: [embed] });
+      }
+    } catch {}
+  }
 };
