@@ -19,6 +19,7 @@ async function main() {
     interactionCreateHandler(client);
 
     client.once('ready', () => {
+      logger.init(client, process.env.CHANNEL_ID_LOGS);
       logger.success('O bot está online!');
     });
 

@@ -1,12 +1,71 @@
 import chalk from 'chalk';
+import { EmbedBuilder } from 'discord.js';
+
+let discordClient = null;
+let logChannelId = null;
+let currentContext = null;
 
 function timestamp() {
   return new Date().toISOString();
 }
 
+function setContext(context) {
+  currentContext = context;
+}
+
+async function sendToDiscord(level, emoji, color, msg) {
+  if (!discordClient || !logChannelId) return;
+  try {
+    const channel = await discordClient.channels.fetch(logChannelId);
+    if (channel && channel.isTextBased()) {
+      const embed = new EmbedBuilder()
+        .setColor(color)
+        .setTitle(`${emoji} ${level}`)
+        .setDescription(msg)
+        .setFooter({ text: timestamp() });
+
+      if (currentContext) {
+        embed.addFields(
+          { name: 'Servidor', value: `${currentContext.serverName} (${currentContext.serverId})`, inline: false },
+          { name: 'Canal', value: `${currentContext.channelName} (${currentContext.channelId})`, inline: false },
+          { name: 'Usuário', value: `${currentContext.userTag} (${currentContext.userId})`, inline: false },
+          { name: 'Evento', value: currentContext.eventType, inline: false }
+        );
+      }
+
+      await channel.send({ embeds: [embed] });
+    }
+  } catch {
+    // falha silenciosa
+  }
+}
+
+function formatMessage(level, msg) {
+  return `[${level}] [${timestamp()}] ${msg}`;
+}
+
 export const logger = {
-  info: (msg) => console.log(chalk.blue(`[INFO] [${timestamp()}]`), msg),
-  success: (msg) => console.log(chalk.green(`[SUCCESS] [${timestamp()}]`), msg),
-  warn: (msg) => console.log(chalk.yellow(`[WARN] [${timestamp()}]`), msg),
-  error: (msg) => console.error(chalk.red(`[ERROR] [${timestamp()}]`), msg),
+  init: (client, channelId) => {
+    discordClient = client;
+    logChannelId = channelId;
+  },
+  setContext: (context) => {
+    setContext(context);
+  },
+  info: async (msg) => {
+    console.log(chalk.blue(formatMessage('INFO', msg)));
+    await sendToDiscord('INFO', '🛈', 0x3498db, msg);
+  },
+  success: async (msg) => {
+    console.log(chalk.green(formatMessage('SUCCESS', msg)));
+    await sendToDiscord('SUCCESS', '✅', 0x2ecc71, msg);
+  },
+  warn: async (msg) => {
+    console.log(chalk.yellow(formatMessage('WARN', msg)));
+    await sendToDiscord('WARNING', '⚠️', 0xf1c40f, msg);
+  },
+  error: async (msg) => {
+    console.error(chalk.red(formatMessage('ERROR', msg)));
+    await sendToDiscord('ERROR', '❌', 0xe74c3c, msg);
+  },
 };
