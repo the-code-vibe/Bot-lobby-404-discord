@@ -1,5 +1,7 @@
 import chalk from 'chalk';
 import { EmbedBuilder } from 'discord.js';
+import os from 'os';
+import { networkInterfaces } from 'os';
 
 let discordClient = null;
 let logChannelId = null;
@@ -13,6 +15,20 @@ function setContext(context) {
   currentContext = context;
 }
 
+function getLocalIP() {
+  const nets = networkInterfaces();
+  let ip = 'Desconhecido';
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        ip = net.address;
+        break;
+      }
+    }
+  }
+  return ip;
+}
+
 async function sendToDiscord(level, emoji, color, msg) {
   if (!discordClient || !logChannelId) return;
   try {
@@ -22,7 +38,7 @@ async function sendToDiscord(level, emoji, color, msg) {
         .setColor(color)
         .setTitle(`${emoji} ${level}`)
         .setDescription(msg)
-        .setFooter({ text: timestamp() });
+        .setFooter({ text: `${timestamp()} | IP: ${getLocalIP()}` });
 
       if (currentContext) {
         embed.addFields(
@@ -75,19 +91,17 @@ export const logger = {
       if (channel && channel.isTextBased()) {
         const now = new Date();
         const formattedDate = now.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-  
         const guilds = discordClient.guilds.cache.map(g => `${g.name} (ID: ${g.id})`).join('\n') || 'Nenhum servidor';
-  
         const embed = new EmbedBuilder()
           .setColor(0x00ff99)
           .setTitle('🟢 Bot Iniciado')
           .setDescription('O bot foi iniciado com sucesso.')
           .addFields(
             { name: 'Data e Hora', value: formattedDate, inline: false },
-            { name: 'Servidores Conectados', value: guilds, inline: false }
+            { name: 'Servidores Conectados', value: guilds, inline: false },
+            { name: 'IP da Máquina', value: getLocalIP(), inline: false }
           )
           .setFooter({ text: timestamp() });
-  
         await channel.send({ embeds: [embed] });
       }
     } catch {}
