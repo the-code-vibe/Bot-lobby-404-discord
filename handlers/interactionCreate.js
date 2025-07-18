@@ -1,14 +1,14 @@
 import { Events } from 'discord.js';
 import { commandsMap } from '../commands/index.js';
 import axios from 'axios';
+import { searchAnimesOnlineCC } from '../commands/anime/searchAnimesOnlineCC.js';
+import animeCommand, { handleAnimeSeasonButton } from '../commands/anime/anime.js';
 
 async function searchSteamGames(query) {
-  // Busca jogos na Steam Store API (usando endpoint de search)
   try {
     const url = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(query)}&l=portuguese&cc=BR`;
     const { data } = await axios.get(url);
     if (!data.items) return [];
-    // Retorna até 25 sugestões
     return data.items.slice(0, 25).map(item => ({
       name: item.name,
       value: String(item.id),
@@ -20,12 +20,26 @@ async function searchSteamGames(query) {
 
 export async function interactionCreateHandler(client) {
   client.on(Events.InteractionCreate, async interaction => {
-    // Handler de autocomplete para o comando game
+    console.log('Tipo de interação recebida:', interaction.type);
+    if (interaction.isButton()) {
+      console.log('Botão customId:', interaction.customId);
+    }
+
+    if (interaction.isButton() && interaction.customId.startsWith('anime_season_')) {
+      return handleAnimeSeasonButton(interaction);
+    }
+
     if (interaction.isAutocomplete()) {
       const focusedOption = interaction.options.getFocused(true);
       if (interaction.commandName === 'game' && focusedOption.name === 'nome') {
         const query = focusedOption.value;
         const choices = query.length > 1 ? await searchSteamGames(query) : [];
+        await interaction.respond(choices);
+        return;
+      }
+      if (interaction.commandName === 'anime' && focusedOption.name === 'query') {
+        const query = focusedOption.value;
+        const choices = query.length > 1 ? await searchAnimesOnlineCC(query) : [];
         await interaction.respond(choices);
         return;
       }
