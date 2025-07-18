@@ -2,7 +2,14 @@ import { Events } from 'discord.js';
 import { commandsMap } from '../commands/index.js';
 import axios from 'axios';
 import { searchAnimesOnlineCC } from '../commands/anime/searchAnimesOnlineCC.js';
-import animeCommand, { handleAnimeSeasonButton } from '../commands/anime/anime.js';
+import animeCommand from '../commands/anime/anime.js';
+import { exec } from 'child_process';
+
+function getSlugFromAnimeLink(link) {
+  // Exemplo: https://animesonlinecc.to/anime/solo-leveling/ => solo-leveling
+  const match = link.match(/\/anime\/([^/]+)\/?/);
+  return match ? match[1] : '';
+}
 
 async function searchSteamGames(query) {
   try {
@@ -23,10 +30,17 @@ export async function interactionCreateHandler(client) {
     console.log('Tipo de interação recebida:', interaction.type);
     if (interaction.isButton()) {
       console.log('Botão customId:', interaction.customId);
-    }
-
-    if (interaction.isButton() && interaction.customId.startsWith('anime_season_')) {
-      return handleAnimeSeasonButton(interaction);
+      if (interaction.customId.startsWith('anime_download|')) {
+        const animeLink = decodeURIComponent(interaction.customId.split('|')[1]);
+        const slug = getSlugFromAnimeLink(animeLink);
+        await interaction.deferReply({ ephemeral: true });
+        exec(`python3 services/scripts/python/service-download-eps-animeonlinecc.py "${animeLink}"`, (error, stdout, stderr) => {
+          if (error) console.error(error);
+          if (stderr) console.error(stderr);
+        });
+        await interaction.editReply(`Download iniciado! Quando estiver pronto, assista aqui: https://bot.vitorgabrieldev.io/anime/watch/${slug}`);
+        return;
+      }
     }
 
     if (interaction.isAutocomplete()) {
