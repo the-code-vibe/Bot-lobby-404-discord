@@ -6,6 +6,7 @@ import { networkInterfaces } from 'os';
 let discordClient = null;
 let logChannelId = null;
 let currentContext = null;
+let isNotifyChannel = false;
 
 function timestamp() {
   return new Date().toISOString();
@@ -30,7 +31,7 @@ function getLocalIP() {
 }
 
 async function sendToDiscord(level, emoji, color, msg) {
-  if (!discordClient || !logChannelId) return;
+  if (!discordClient || !logChannelId || !isNotifyChannel) return;
   try {
     const channel = await discordClient.channels.fetch(logChannelId);
     if (channel && channel.isTextBased()) {
@@ -68,6 +69,9 @@ export const logger = {
   setContext: (context) => {
     setContext(context);
   },
+  setNotifyChannel: (value) => {
+    isNotifyChannel = !!value;
+  },
   info: async (msg) => {
     console.log(chalk.blue(formatMessage('INFO', msg)));
     await sendToDiscord('INFO', '🛈', 0x3498db, msg);
@@ -85,7 +89,7 @@ export const logger = {
     await sendToDiscord('ERROR', '❌', 0xe74c3c, msg);
   },
   logStartupInfo: async () => {
-    if (!discordClient || !logChannelId) return;
+    if (!discordClient || !logChannelId || !isNotifyChannel) return;
     try {
       const channel = await discordClient.channels.fetch(logChannelId);
       if (channel && channel.isTextBased()) {

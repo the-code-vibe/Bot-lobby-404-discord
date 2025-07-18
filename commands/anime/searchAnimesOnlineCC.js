@@ -1,8 +1,6 @@
-import fetch from 'node-fetch';
 import { load } from 'cheerio';
 
 export async function searchAnimesOnlineCC(query) {
-  console.log('[autocomplete] Buscando:', query);
   try {
     const url = `https://animesonlinecc.to/search/${encodeURIComponent(query)}`;
     const res = await fetch(url);
@@ -11,9 +9,9 @@ export async function searchAnimesOnlineCC(query) {
     const results = [];
     $('.item').each((i, el) => {
       const title = $(el).find('.data h3 a').text().trim();
-      if (title) results.push({ name: title, value: title });
+      const link = $(el).find('.data h3 a').attr('href');
+      if (title && link) results.push({ name: title, value: title, link });
     });
-    console.log('[autocomplete] Resultados:', results.map(r => r.name));
     return results.slice(0, 10);
   } catch {
     return [];

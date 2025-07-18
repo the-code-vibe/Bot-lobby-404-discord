@@ -16,3 +16,6 @@ node_modules/
 # Outros arquivos temporários do sistema
 .DS_Store
 Thumbs.db
+
+# Python
+venv
