@@ -42,17 +42,27 @@ export default {
 };
 
 export async function handleAnimeAutocomplete(interaction) {
-  const focusedOption = interaction.options.getFocused(true);
-  if (focusedOption.name !== 'query') return;
-  const query = focusedOption.value;
-  console.log('Usuário digitou:', query);
-  if (!query || query.length < 2) {
-    return interaction.respond([]);
+  try {
+    const focusedOption = interaction.options.getFocused(true);
+    if (focusedOption.name !== 'query') return;
+    const query = focusedOption.value;
+    if (!query || query.length < 2) {
+      return interaction.respond([]);
+    }
+    let results = [];
+    try {
+      results = await searchAnimesOnlineCC(query);
+    } catch (err) {
+      console.error('Erro ao buscar animes:', err);
+    }
+    const choices = results.slice(0, 25).map(r => ({
+      name: r.name,
+      value: r.name
+    }));
+    await interaction.respond(choices);
+  } catch (err) {
+    // Garante que sempre responde, mesmo se der erro acima
+    try { await interaction.respond([]); } catch {}
+    console.error('Erro no autocomplete:', err);
   }
-  const results = await searchAnimesOnlineCC(query);
-  const choices = results.slice(0, 25).map(r => ({
-    name: r.name,
-    value: r.name
-  }));
-  await interaction.respond(choices);
 }

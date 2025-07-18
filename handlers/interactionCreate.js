@@ -34,9 +34,11 @@ export async function interactionCreateHandler(client) {
         const animeLink = decodeURIComponent(interaction.customId.split('|')[1]);
         const slug = getSlugFromAnimeLink(animeLink);
         await interaction.deferReply({ ephemeral: true });
-        exec(`python3 services/scripts/python/service-download-eps-animeonlinecc.py "${animeLink}"`, (error, stdout, stderr) => {
+        // Chama o script Node.js para baixar episódios
+        exec(`node services/scripts/node/service-download-eps-animeonlinecc.js "${animeLink}" "${slug}" "01"`, (error, stdout, stderr) => {
           if (error) console.error(error);
           if (stderr) console.error(stderr);
+          if (stdout) console.log(stdout);
         });
         await interaction.editReply(`Download iniciado! Quando estiver pronto, assista aqui: https://bot.vitorgabrieldev.io/anime/watch/${slug}`);
         return;

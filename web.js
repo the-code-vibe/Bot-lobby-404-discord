@@ -5,9 +5,28 @@ import fs from 'fs';
 const app = express();
 const PORT = 3000;
 
+const ANIMES_BASE = path.join(process.cwd(), 'public', 'animes');
+
+app.get('/anime', (req, res) => {
+  if (!fs.existsSync(ANIMES_BASE)) {
+    return res.send('<h1>Nenhum anime disponível.</h1>');
+  }
+  const animes = fs.readdirSync(ANIMES_BASE, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name);
+  if (animes.length === 0) {
+    return res.send('<h1>Nenhum anime disponível.</h1>');
+  }
+  const links = animes.map(slug => `<li><a href="/anime/watch/${slug}">${slug}</a></li>`).join('');
+  res.send(`
+    <h1>Animes disponíveis</h1>
+    <ul>${links}</ul>
+  `);
+});
+
 app.get('/anime/watch/:slug', (req, res) => {
   const { slug } = req.params;
-  const folder = path.join(process.cwd(), slug.replace(/[^a-zA-Z0-9_-]/g, '_'));
+  const folder = path.join(ANIMES_BASE, slug);
   if (!fs.existsSync(folder)) {
     return res.send(`<h1>Nenhum episódio disponível ainda para ${slug}.</h1>`);
   }
@@ -19,12 +38,13 @@ app.get('/anime/watch/:slug', (req, res) => {
   res.send(`
     <h1>Episódios de ${slug}</h1>
     <ul>${links}</ul>
+    <a href="/anime">&larr; Voltar para lista de animes</a>
   `);
 });
 
 app.get('/anime/video/:slug/:filename', (req, res) => {
   const { slug, filename } = req.params;
-  const filePath = path.join(process.cwd(), slug.replace(/[^a-zA-Z0-9_-]/g, '_'), filename);
+  const filePath = path.join(ANIMES_BASE, slug, filename);
   if (!fs.existsSync(filePath)) {
     return res.status(404).send('Arquivo não encontrado');
   }
