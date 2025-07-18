@@ -1,75 +1,48 @@
 import { Events } from 'discord.js';
-import { getGameDetails, getPlayerSummaries, getFriends } from '../services/steam.js';
-import { buildGameEmbed } from '../utils/embedBuilder.js';
-import { EmbedBuilder } from 'discord.js';
+import { commandsMap } from '../commands/index.js';
+import axios from 'axios';
+
+async function searchSteamGames(query) {
+  // Busca jogos na Steam Store API (usando endpoint de search)
+  try {
+    const url = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(query)}&l=portuguese&cc=BR`;
+    const { data } = await axios.get(url);
+    if (!data.items) return [];
+    // Retorna até 25 sugestões
+    return data.items.slice(0, 25).map(item => ({
+      name: item.name,
+      value: String(item.id),
+    }));
+  } catch {
+    return [];
+  }
+}
 
 export async function interactionCreateHandler(client) {
-    client.on(Events.InteractionCreate, async interaction => {
-        if (!interaction.isChatInputCommand()) return;
+  client.on(Events.InteractionCreate, async interaction => {
+    // Handler de autocomplete para o comando game
+    if (interaction.isAutocomplete()) {
+      const focusedOption = interaction.options.getFocused(true);
+      if (interaction.commandName === 'game' && focusedOption.name === 'nome') {
+        const query = focusedOption.value;
+        const choices = query.length > 1 ? await searchSteamGames(query) : [];
+        await interaction.respond(choices);
+        return;
+      }
+    }
 
-        if (interaction.commandName === 'ping') {
-            await interaction.reply('Pong!');
-        }
-
-        if (interaction.commandName === 'jogo') {
-            const appId = interaction.options.getString('appid');
-
-            try {
-                const game = await getGameDetails(appId);
-                if (!game) {
-                    return interaction.reply('Joguinho não foi encontrado!');
-                }
-
-                const embed = buildGameEmbed(game);
-                await interaction.reply({ embeds: [embed] });
-
-            } catch {
-                await interaction.reply('Erro ao buscar o jogo.');
-            }
-        }
-
-        if (interaction.commandName === 'friends') {
-            await interaction.deferReply();
-
-            const friends = await getFriends();
-
-            if (!friends.length) {
-                return interaction.editReply("Nenhum amigo encontrado!");
-            };
-
-            const steamIds = friends.map(f => f.steamid)
-            const summaries = await getPlayerSummaries(steamIds);
-
-            const statusMap = {
-                0: 'Offline',
-                1: 'Online',
-                2: 'Ocupado',
-                3: 'Ausente',
-                4: 'Soneca',
-                5: 'Procurando Trade',
-                6: 'Procurando Jogo',
-            };
-
-            const embeds = summaries.map(p => {
-                const status = statusMap[p.personastate] || 'Desconhecido';
-                const game = p.gameextrainfo ?? null;
-
-                return new EmbedBuilder()
-                    .setTitle(p.personaname)
-                    .setURL(p.profileurl)
-                    .setThumbnail(p.avatarfull)
-                    .addFields(
-                        { name: 'Status', value: status, inline: true },
-                        { name: 'País', value: p.loccountrycode || 'Desconhecido', inline: true },
-                        { name: 'Jogo Atual', value: game ?? 'Nenhum jogo ativo', inline: false }
-                    );
-            });
-
-            if (embeds.length === 0) {
-                await interaction.editReply('Nenhum amigo online ou jogando.');
-            } else {
-                await interaction.editReply({ embeds });
-            }
-        }
-    });
+    if (!interaction.isChatInputCommand()) return;
+    const command = commandsMap.get(interaction.commandName);
+    if (!command) return;
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.editReply('Ocorreu um erro ao executar o comando.');
+      } else {
+        await interaction.reply('Ocorreu um erro ao executar o comando.');
+      }
+      console.error(error);
+    }
+  });
 }
