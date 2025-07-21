@@ -31,7 +31,7 @@ function sanitize(text) {
 function downloadEpisode(url, folder, filename) {
   fs.mkdirSync(folder, { recursive: true });
   const output = path.join(folder, filename + '.%(ext)s');
-  const ytdlpPath = path.resolve(__dirname, 'yt-dlp'); // usa o yt-dlp local
+  const ytdlpPath = path.resolve(__dirname, 'yt-dlp');
   const args = [
     '-f', 'best[ext=mp4]',
     '-o', output,

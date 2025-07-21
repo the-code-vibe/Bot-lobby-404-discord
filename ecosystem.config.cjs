@@ -8,15 +8,6 @@ module.exports = {
       env: {
         NODE_ENV: 'production'
       }
-    },
-    {
-      name: 'web-server',
-      script: 'web.js',
-      cwd: './',
-      interpreter: 'node',
-      env: {
-        NODE_ENV: 'production'
-      }
     }
   ]
 };

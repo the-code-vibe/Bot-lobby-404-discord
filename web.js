@@ -6,7 +6,22 @@ const app = express();
 const PORT = 3000;
 
 const ANIMES_BASE = path.join(process.cwd(), 'public', 'animes');
+const PUBLIC_BASE = path.join(process.cwd(), 'public');
 
+// Servir arquivos estáticos (css, js, imagens, etc)
+app.use(express.static(PUBLIC_BASE));
+
+// Rota principal: renderiza o index.html
+app.get('/', (req, res) => {
+  const indexPath = path.join(PUBLIC_BASE, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.send('<h1>index.html não encontrado.</h1>');
+  }
+});
+
+// Index: lista todos os animes disponíveis
 app.get('/anime', (req, res) => {
   if (!fs.existsSync(ANIMES_BASE)) {
     return res.send('<h1>Nenhum anime disponível.</h1>');
@@ -24,6 +39,7 @@ app.get('/anime', (req, res) => {
   `);
 });
 
+// Lista episódios de um anime
 app.get('/anime/watch/:slug', (req, res) => {
   const { slug } = req.params;
   const folder = path.join(ANIMES_BASE, slug);
@@ -42,6 +58,7 @@ app.get('/anime/watch/:slug', (req, res) => {
   `);
 });
 
+// Servir vídeo
 app.get('/anime/video/:slug/:filename', (req, res) => {
   const { slug, filename } = req.params;
   const filePath = path.join(ANIMES_BASE, slug, filename);
